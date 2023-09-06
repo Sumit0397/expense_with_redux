@@ -5,10 +5,14 @@ import RootLayout from './components/Layout/RootLayout';
 import Expenses from './components/ExpenseTrack/Expenses';
 import Updateprofile from './components/Profile/Updateprofile';
 import Welcomepage from './components/Welcome/Welcomepage';
+import { useSelector } from 'react-redux';
 
 function App() {
+  const isDarkMode = useSelector((state) => state.theme.isDark);
+  const isLoggedIn = useSelector((state) => state.auth.isLoggedIn);
+
   return (
-    <div className="App">
+    <div  className={`App ${isLoggedIn && isDarkMode ? "darkTheme" : "lightTheme"}`}>
       <Routes>
         <Route path='/' element={<SignupLogin/>}/>
         {/* <Route path='/profile' element={<Profile/>}/> */}

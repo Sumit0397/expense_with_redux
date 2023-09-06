@@ -4,7 +4,11 @@ import classes from "./ExpenseList.module.css";
 import { AiFillDelete, AiFillEdit } from "react-icons/ai";
 import { useDispatch } from 'react-redux';
 import { expenseActions } from '../../store/expense';
+import { themeActions } from '../../store/theme';
+import { authActions } from '../../store/auth';
+import { FaCrown } from "react-icons/fa";
 import axios from 'axios';
+import { Button } from 'react-bootstrap';
 
 
 const ExpenseList = () => {
@@ -13,9 +17,9 @@ const ExpenseList = () => {
   const dispatch = useDispatch();
 
   let total = 0;
-  total = expense.items.reduce((acc,item) => {
+  total = expense.items.reduce((acc, item) => {
     return acc + Number(item.amount)
-  },0)
+  }, 0)
 
   const editClickHandler = (item) => {
     const filter = expense.items.filter((ele) => ele !== item);
@@ -26,7 +30,7 @@ const ExpenseList = () => {
   const dltClickHandler = async (item) => {
     dispatch(expenseActions.removeItem(item));
 
-    const email = auth.userEmail.replace(/[.@]/g,"");
+    const email = auth.userEmail.replace(/[.@]/g, "");
     try {
       const res = await axios.get(`https://expense-project-practice-default-rtdb.firebaseio.com/${email}/expenses.json`)
 
@@ -43,12 +47,12 @@ const ExpenseList = () => {
   }
 
   const restoreData = async () => {
-    const email = auth.userEmail.replace(/[.@]/g,"");
+    const email = auth.userEmail.replace(/[.@]/g, "");
     try {
       const res = await axios.get(`https://expense-project-practice-default-rtdb.firebaseio.com/${email}/expenses.json`)
 
       const data = res.data;
-      if(data){
+      if (data) {
         const realData = Object.values(data).reverse();
         console.log(realData);
         dispatch(expenseActions.setItems(realData))
@@ -59,34 +63,74 @@ const ExpenseList = () => {
   }
 
   useEffect(() => {
-    if(auth.userEmail !== null){
+    if (auth.userEmail !== null) {
       restoreData();
     }
-  },[auth.userEmail])
+  }, [auth.userEmail])
+
+  const clickActPremiumHandler = async () => {
+    dispatch(themeActions.toggleTheme());
+    const email = auth.userEmail.replace(/[.@]/g, "");
+    try {
+      const res = await axios.post(
+        `https://myreact-expense-tracker-default-rtdb.firebaseio.com/${email}/userDetail.json`, {isPremium: true}
+      );
+    } catch (error){ 
+      alert(error)
+    }
+    dispatch(authActions.setIsPremium());
+    localStorage.setItem('isPremium', true);
+  };
+
+  const clickDownloadHandler = () => {
+    const generateCSV = (itemsArr) => {
+      const csvRows = [];
+      const headers = ['Date', 'Description', 'Category', 'Amount'];
+      csvRows.push(headers.join(','));
+  
+      itemsArr.forEach((i) => {
+        const row = [
+          i.date,
+          i.description,
+          i.category,
+          i.amount
+        ];
+        csvRows.push(row.join(","));
+      });
+      
+      return csvRows.join("\n");
+    };
+    // console.log([generateCSV(expense.items)])
+    const csvContent = generateCSV(expense.items);
+    const blob = new Blob([csvContent], { type: "text/csv" });
+    const downloadLink = document.createElement("a");
+    downloadLink.href = URL.createObjectURL(blob);
+    downloadLink.download = "expenses.csv";
+    downloadLink.click();
+  };
 
   return (
     <section className={classes.listCon}>
-      {/* <div className={classes.container}> */}
+      <div className={classes.container}>
         <h1>Expenses</h1>
         <div className={classes.totalAmt}>
-          <h3>Total expense  <span> ₹{total}</span></h3>
-        </div>  
-          {/* {total >= 10000 &&
+        <h3>Total expense  <span> ₹{total}</span></h3>
+        {total >= 10000 &&
             (!auth.isPremium ? (
               <Button variant="danger" onClick={clickActPremiumHandler}>
                 Activate Premium
               </Button>
             ) : (
               <Button variant="warning" onClick={clickDownloadHandler}><FaCrown />Download List</Button>
-            ))} */}
-
-        {/* </div>
+            ))}
+         
+        </div>
         {total >= 10000 && (!auth.isPremium &&
           <p style={{ color: "red" }}>
             *Please Activate Premium total expenses more than 10000
           </p>
         )}
-      </div> */}
+      </div>
       <ul>
         {expense.items.map((i, index) => (
           <li className={classes.listItem} key={index}>
